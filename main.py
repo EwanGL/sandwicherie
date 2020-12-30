@@ -7,7 +7,7 @@ from tkinter.messagebox import showinfo
 from datetime import datetime
 
 # Connexion à la base de données
-connect = sqlite3.connect('aux_deux_amis_creer.db')
+connect = sqlite3.connect('aux_deux_amis.db')
 
 #Créer les tables de la base de données
 def CreateTables():
@@ -230,8 +230,8 @@ def consulter():
     recherche_button = Button(recherche_window, text='Rechercher la commande', command=afficher_commande)
     recherche_button.pack(padx=5, pady=5)
     
-# CreateTables()
-# ImportData()
+CreateTables()
+ImportData()
 
 #Récupérer les nom et prénoms des clients depuis la base de données
 cur = connect.cursor()
