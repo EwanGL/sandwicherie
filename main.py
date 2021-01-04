@@ -60,14 +60,14 @@ def commander():
         cur.execute(f"SELECT id FROM clients WHERE nom='{client[0]}' AND prenom='{client[1]}';")
         idClient = int(cur.fetchone()[0])
         
-        idSandwichs=''
+        idSandwichs=[]
         for key in contenu_commande.keys():
             cur.execute(f"SELECT id FROM sandwichs WHERE nom='{key}';")
-            idSandwichs += str(cur.fetchone()[0])+','
+            idSandwichs.append(cur.fetchone()[0])
         
-        quantites = ''
+        quantites = []
         for value in contenu_commande.values():
-            quantites+=str(value)+','
+            quantites.append(value)
         
         now = datetime.now()
         current_date = str(now.strftime("%d/%m/%Y %H:%M:%S"))
@@ -78,8 +78,9 @@ def commander():
         cur.execute(f"SELECT id FROM commandes WHERE idClient='{idClient}' AND date='{current_date}';")
         idCommande = int(cur.fetchone()[0])
 
-        cur.execute(f"INSERT INTO contenu ('idCommande', 'idSandwichs', 'quantite') VALUES ({idCommande}, '{idSandwichs}','{quantites}');")
-        connect.commit()
+        for i, idSand in enumerate(idSandwichs):
+            cur.execute(f"INSERT INTO contenu ('idCommande', 'idSandwichs', 'quantite') VALUES ({idCommande}, '{idSand}','{quantites[i]}');")
+            connect.commit()
 
         showinfo('Prix', f'Votre commande as bien été enregistrée.\nVotre numéro de commande est: {idCommande}')
         fermer()
@@ -147,7 +148,7 @@ def commander():
     
     commander_window = Toplevel()
     commander_window.title('Passer une commande')
-    commander_window.geometry("300x300+500+200")
+    commander_window.geometry("300x500+500+200")
     
     list_widget_commander.append(commander_window)
     
@@ -189,18 +190,18 @@ def consulter():
         idCommande = choix_idCommande.get()
 
         cur.execute(f"SELECT idSandwichs, quantite FROM contenu WHERE idCommande = {idCommande};")
-        contenu_db = cur.fetchall()[0]
+        contenu_db = cur.fetchall()
         
-        idSandwichs= contenu_db[0].split(',')[:-1]
-        quantite = contenu_db[1].split(',')[:-1]
+        idSandwichs, quantite = [], []
+        for i in contenu_db:
+            idSandwichs.append(int(i[0]))
+            quantite.append(int(i[1]))
 
         contenue = {}
-        j=0
-        for i in idSandwichs:
-            cur.execute(f"SELECT nom FROM sandwichs WHERE id={int(i)};")
+        for i, idSand in enumerate(idSandwichs):
+            cur.execute(f"SELECT nom FROM sandwichs WHERE id={int(idSand)};")
             sandwichs_nom = cur.fetchone()[0]
-            contenue[sandwichs_nom] = quantite[j]
-            j+=1
+            contenue[sandwichs_nom] = quantite[i]
 
         cur.execute(f"SELECT idClient FROM commandes WHERE id={idCommande};")
         idClient = int(cur.fetchone()[0])
@@ -215,23 +216,23 @@ def consulter():
         client_label.pack(side=TOP, padx=5, pady=5)
 
         for keys, values in contenue.items():
-            Label(commande_window, text=keys+'  x'+values).pack(padx=5, pady=5)
+            Label(commande_window, text=f'{keys}  x{values}').pack(padx=5, pady=5)
     
     recherche_window = Toplevel()
     recherche_window.title('Rechercher une commande')
     recherche_window.geometry("300x100+500+200")
 
     cur.execute("SELECT id FROM commandes;")
-    idMax = cur.fetchall()[-1][0]
+    idMax = int(cur.fetchall()[-1][0])
 
-    choix_idCommande = Spinbox(recherche_window, from_=1, to=int(idMax))
+    choix_idCommande = Spinbox(recherche_window, from_=1, to=idMax)
     choix_idCommande.pack(padx=5, pady=5)
 
     recherche_button = Button(recherche_window, text='Rechercher la commande', command=afficher_commande)
     recherche_button.pack(padx=5, pady=5)
-    
-CreateTables()
-ImportData()
+
+# CreateTables()
+# ImportData()
 
 #Récupérer les nom et prénoms des clients depuis la base de données
 cur = connect.cursor()
@@ -246,7 +247,6 @@ sandwichs_db = cur.fetchall()
 nom_sandwichs=[]
 for i in sandwichs_db:
     nom_sandwichs.append(i[0])
-cur.close
 
 #Mon Interface graphique
 maFenetre = Tk()
